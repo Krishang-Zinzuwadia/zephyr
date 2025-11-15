@@ -1,3 +1,0 @@
-# Hotkey configuration
-hotkey: "ctrl+shift+space"  # Key to activate voice input (Ctrl + Shift + Space)
-

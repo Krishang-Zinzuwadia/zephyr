@@ -1,6 +1,0 @@
-✓ Config updated for reliability:
-  - Model: tiny (fastest)
-  - VAD: False (disabled)
-  - Beam size: 1 (fastest)
-
-Restart Zephyr and try again!
