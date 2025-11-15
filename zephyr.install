@@ -1,0 +1,71 @@
+#!/bin/bash
+
+post_install() {
+    echo "==> Zephyr Voice Input installed successfully!"
+    echo ""
+    echo "==> Post-installation steps:"
+    echo "    1. Enable the systemd user service:"
+    echo "       systemctl --user enable zephyr.service"
+    echo "       systemctl --user start zephyr.service"
+    echo ""
+    echo "    2. Configuration file location:"
+    echo "       ~/.config/zephyr/config.yaml"
+    echo "       (will be created on first run with defaults from /etc/zephyr/config.yaml)"
+    echo ""
+    echo "    3. Downloading Whisper model (this may take a few minutes)..."
+    
+    # Create user config directory
+    mkdir -p "$HOME/.config/zephyr"
+    mkdir -p "$HOME/.cache/zephyr/models"
+    mkdir -p "$HOME/.local/share/zephyr/logs"
+    
+    # Copy default config if user config doesn't exist
+    if [ ! -f "$HOME/.config/zephyr/config.yaml" ]; then
+        cp /etc/zephyr/config.yaml "$HOME/.config/zephyr/config.yaml"
+        echo "    ✓ Default configuration copied to ~/.config/zephyr/config.yaml"
+    fi
+    
+    echo ""
+    echo "==> Note: The Whisper model will be downloaded automatically on first use."
+    echo "    You can pre-download it by running: zephyr --daemon"
+    echo ""
+    echo "==> Usage:"
+    echo "    - Press and hold the backslash (\\) key to start voice input"
+    echo "    - Speak your text"
+    echo "    - Release the key to transcribe and type the text"
+    echo ""
+}
+
+post_upgrade() {
+    echo "==> Zephyr Voice Input upgraded successfully!"
+    echo ""
+    echo "==> Restart the service to apply changes:"
+    echo "    systemctl --user restart zephyr.service"
+    echo ""
+}
+
+pre_remove() {
+    # Stop and disable the service
+    if systemctl --user is-active --quiet zephyr.service; then
+        systemctl --user stop zephyr.service
+        echo "==> Stopped Zephyr service"
+    fi
+    
+    if systemctl --user is-enabled --quiet zephyr.service; then
+        systemctl --user disable zephyr.service
+        echo "==> Disabled Zephyr service"
+    fi
+}
+
+post_remove() {
+    echo "==> Zephyr Voice Input removed"
+    echo ""
+    echo "==> Configuration and cache files remain at:"
+    echo "    ~/.config/zephyr/"
+    echo "    ~/.cache/zephyr/"
+    echo "    ~/.local/share/zephyr/"
+    echo ""
+    echo "    Remove them manually if desired:"
+    echo "    rm -rf ~/.config/zephyr ~/.cache/zephyr ~/.local/share/zephyr"
+    echo ""
+}

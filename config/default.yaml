@@ -1,0 +1,57 @@
+# Zephyr Voice Input Configuration
+# This is the default configuration file for Zephyr
+# Copy this to ~/.config/zephyr/config.yaml and customize as needed
+
+# Hotkey configuration
+hotkey: "ctrl+alt_r"  # Key to activate voice input (Ctrl + Right Alt)
+
+# Speech recognition model
+# Options: tiny, base, small, medium, large
+# Smaller models are faster but less accurate
+# Recommended: base (good balance) or small (better accuracy)
+model: "base"
+
+# Language configuration
+# Use "auto" for automatic detection or specify language code (e.g., "en", "es", "fr")
+language: "auto"
+
+# Audio settings
+audio:
+  sample_rate: 16000  # Hz - optimal for Whisper
+  channels: 1  # Mono recording
+  chunk_duration: 1.0  # seconds - for streaming transcription
+
+# Typing simulation settings
+typing:
+  speed: 50  # characters per second
+  use_clipboard_fallback: true  # Use clipboard if direct typing fails
+
+# UI overlay settings
+ui:
+  width: 400  # pixels
+  height: 120  # pixels (will expand for longer text)
+  border_radius: 16  # pixels
+  background_opacity: 0.95  # 0.0 to 1.0
+  blur_enabled: true
+  animation_speed: 1.0  # multiplier for animation timing (1.0 = normal)
+  show_confidence: false  # Show transcription confidence scores
+
+# Advanced settings
+advanced:
+  min_press_duration: 100  # milliseconds - ignore shorter key presses
+  auto_start: true  # Start on system login
+  log_level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_file: "~/.local/share/zephyr/logs/zephyr.log"
+  
+  # Voice Activity Detection
+  vad_enabled: true
+  vad_threshold: 0.5  # 0.0 to 1.0 - higher = more strict
+  
+  # Transcription settings
+  beam_size: 5  # Whisper beam search size (higher = more accurate but slower)
+  best_of: 5  # Number of candidates to consider
+  temperature: 0.0  # Sampling temperature (0 = deterministic)
+  
+  # Resource management
+  unload_model_after: 300  # seconds - unload model after idle time (0 = never)
+  max_recording_duration: 60  # seconds - maximum recording length

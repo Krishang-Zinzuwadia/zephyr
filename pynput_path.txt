@@ -1,0 +1,1 @@
+/home/krishang/.local/lib/python3.14/site-packages/pynput

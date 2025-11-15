@@ -1,0 +1,30 @@
+[Unit]
+Description=Zephyr Voice Input Service
+Documentation=https://github.com/yourusername/zephyr
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/zephyr --daemon
+Restart=on-failure
+RestartSec=5
+
+# Resource limits
+MemoryMax=500M
+CPUQuota=20%
+
+# Security hardening
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+NoNewPrivileges=yes
+
+# Allow access to user config and cache
+ReadWritePaths=%h/.config/zephyr %h/.cache/zephyr %h/.local/share/zephyr
+
+# Environment
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=default.target

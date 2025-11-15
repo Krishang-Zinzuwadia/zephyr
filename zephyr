@@ -1,0 +1,183 @@
+#!/home/krishang/.local/share/mise/installs/python/3.14.0/bin/python3
+"""
+Zephyr - Voice-to-text input for Linux
+Run with sudo for proper keyboard access
+"""
+import sys
+import os
+import signal
+from pathlib import Path
+
+# Add user's site-packages to path (for packages installed with pip --user)
+if 'SUDO_USER' in os.environ:
+    user = os.environ['SUDO_USER']
+    user_site_packages = f"/home/{user}/.local/lib/python3.14/site-packages"
+    if os.path.exists(user_site_packages):
+        sys.path.insert(0, user_site_packages)
+        print(f"Added to Python path: {user_site_packages}")
+    else:
+        print(f"Warning: User site-packages not found: {user_site_packages}")
+else:
+    # Not running with sudo, add current user's packages
+    import site
+    user_site = site.USER_SITE
+    if user_site and os.path.exists(user_site):
+        sys.path.insert(0, user_site)
+        print(f"Added to Python path: {user_site}")
+
+# Add src to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+# Debug: Try importing pynput
+try:
+    import pynput
+    print(f"✓ pynput found at: {pynput.__file__}")
+except ImportError as e:
+    print(f"✗ pynput import failed: {e}")
+    print(f"Python path: {sys.path[:5]}")
+
+# Import GTK
+import gi
+gi.require_version('Gtk', '4.0')
+from gi.repository import Gtk
+
+def main():
+    # Check if running as root
+    if os.geteuid() != 0:
+        print("Zephyr needs root access for keyboard monitoring.")
+        print("Please run with sudo -E to preserve environment:")
+        print(f"  sudo -E {sys.argv[0]}")
+        print()
+        print("Or install packages for root:")
+        print("  sudo pip install sounddevice numpy faster-whisper pynput PyYAML watchdog evdev")
+        return 1
+    
+    # Preserve display access for GTK when running as root
+    if 'SUDO_USER' in os.environ:
+        user = os.environ['SUDO_USER']
+        
+        # Set DISPLAY if not set
+        if 'DISPLAY' not in os.environ:
+            os.environ['DISPLAY'] = ':1'  # Your display is :1
+        
+        # Always set XAUTHORITY for the user
+        xauth_path = f"/home/{user}/.Xauthority"
+        if os.path.exists(xauth_path):
+            os.environ['XAUTHORITY'] = xauth_path
+            print(f"Set XAUTHORITY: {xauth_path}")
+        
+        # Also try runtime dir
+        runtime_dir = f"/run/user/{os.stat(f'/home/{user}').st_uid}"
+        if os.path.exists(runtime_dir):
+            os.environ['XDG_RUNTIME_DIR'] = runtime_dir
+    
+    print("=" * 60)
+    print("Zephyr Voice Input")
+    print("=" * 60)
+    print()
+    
+    config_path = Path.home() / ".config" / "zephyr" / "config.yaml"
+    
+    # Check for user's config (not root's)
+    if 'SUDO_USER' in os.environ:
+        user_home = Path(f"/home/{os.environ['SUDO_USER']}")
+        config_path = user_home / ".config" / "zephyr" / "config.yaml"
+    
+    if not config_path.exists():
+        print(f"Error: Configuration file not found at {config_path}")
+        print()
+        print("Please create a configuration file first.")
+        return 1
+    
+    print(f"Config: {config_path}")
+    print()
+    
+    # Create GTK application
+    app = Gtk.Application(application_id="com.zephyr.voiceinput")
+    
+    daemon = None
+    
+    def on_activate(application):
+        nonlocal daemon
+        
+        try:
+            from zephyr.daemon import ZephyrDaemon
+            
+            print("Starting daemon...")
+            daemon = ZephyrDaemon(str(config_path))
+            daemon.start()
+            
+            print()
+            print("✓ Zephyr is running!")
+            print()
+            
+            # Read the actual hotkey from config
+            try:
+                import yaml
+                with open(config_path) as f:
+                    cfg = yaml.safe_load(f)
+                    hotkey = cfg.get('hotkey', 'unknown')
+                print(f"Hotkey: {hotkey}")
+            except:
+                print("Hotkey: Check your config file")
+            
+            print("Press Ctrl+C to stop")
+            print()
+            
+            application.hold()
+            
+        except Exception as e:
+            print(f"\n✗ Error: {e}")
+            import traceback
+            traceback.print_exc()
+            application.quit()
+            sys.exit(1)
+    
+    def on_shutdown(application):
+        nonlocal daemon
+        
+        print("\nShutting down...")
+        
+        if daemon:
+            try:
+                daemon.stop()
+            except Exception as e:
+                print(f"Error during shutdown: {e}")
+        
+        print("Goodbye!")
+        
+        try:
+            application.release()
+        except Exception:
+            pass
+    
+    app.connect("activate", on_activate)
+    app.connect("shutdown", on_shutdown)
+    
+    def signal_handler(signum, frame):
+        print(f"\nReceived signal {signum}, shutting down...")
+        if daemon:
+            daemon.stop()
+        app.quit()
+    
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    try:
+        exit_code = app.run(None)
+        return exit_code
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt received")
+        if daemon:
+            daemon.stop()
+        return 0
+    except Exception as e:
+        print(f"\nUnexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        if daemon:
+            daemon.stop()
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())
