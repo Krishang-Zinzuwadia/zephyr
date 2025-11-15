@@ -309,23 +309,6 @@ class UIOverlay:
         # This releases all GTK resources when overlay is not visible
         GLib.timeout_add(350, self._destroy_window_after_hide)
     
-    def show_completion(self) -> None:
-        """
-        Show completion state (checkmark) but DON'T auto-hide
-        Keep the UI visible until user presses hotkey again
-        """
-        logger.info("Showing completion - UI stays visible")
-        
-        # Show checkmark animation
-        self.show_checkmark = True
-        self.checkmark_progress = 0.0
-        
-        # Stop waveform animation
-        self._stop_waveform_animation()
-        
-        # DON'T call hide() - let the UI stay visible
-        # It will be hidden when user presses hotkey again
-    
     def update_audio_level(self, level: float) -> None:
         """
         Update waveform visualization based on audio level
